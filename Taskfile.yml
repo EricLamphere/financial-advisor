@@ -1,0 +1,37 @@
+version: "3"
+
+tasks:
+  start:
+    desc: Start the Plaid Link server and Streamlit dashboard
+    deps: [link, dashboard]
+
+  link:
+    desc: Start the Plaid Link OAuth server (port 5001)
+    cmd: .venv/bin/python -m src.link.server
+    silent: false
+
+  dashboard:
+    desc: Start the Streamlit dashboard (port 8501)
+    cmd: .venv/bin/streamlit run src/dashboard/app.py
+    silent: false
+
+  test:
+    desc: Run unit and E2E tests with coverage
+    cmd: .venv/bin/pytest tests/ -m "not integration"
+
+  test:all:
+    desc: Run all tests including integration (requires Plaid sandbox credentials)
+    cmd: .venv/bin/pytest tests/
+
+  test:unit:
+    desc: Run unit tests only
+    cmd: .venv/bin/pytest tests/unit/
+
+  test:watch:
+    desc: Run unit tests in watch mode (re-runs on file changes)
+    cmd: .venv/bin/ptw tests/unit/ -- --no-cov
+
+  db:wipe:
+    desc: Wipe all accounts, transactions, and cursors from the database (irreversible)
+    prompt: "This will permanently delete all accounts and transactions. Are you sure?"
+    cmd: sqlite3 "${DATABASE_PATH:-db/financial_advisor.db}" "DELETE FROM sync_cursors; DELETE FROM transactions; DELETE FROM accounts;"
