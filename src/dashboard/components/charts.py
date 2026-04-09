@@ -95,6 +95,83 @@ def spending_by_period_chart(data: list[dict], title: str = "Spending") -> go.Fi
     return fig
 
 
+def income_by_source_chart(data: list[dict]) -> go.Figure:
+    """Horizontal bar chart of income totals by category/source."""
+    if not data:
+        return _empty_figure("No income data")
+
+    sorted_data = sorted(data, key=lambda r: r["total"])
+    fig = px.bar(
+        sorted_data,
+        x="total",
+        y="category",
+        orientation="h",
+        labels={"total": "Amount ($)", "category": "Source"},
+        title="Income by Source",
+        color="total",
+        color_continuous_scale="Greens",
+    )
+    fig.update_layout(coloraxis_showscale=False)
+    return fig
+
+
+def income_over_time_chart(data: list[dict], title: str = "Income") -> go.Figure:
+    """Bar chart of income totals by period."""
+    if not data:
+        return _empty_figure("No income data")
+
+    sorted_data = sorted(data, key=lambda r: r["period"])
+    ordered_periods = [r["period"] for r in sorted_data]
+    fig = px.bar(
+        sorted_data,
+        x="period",
+        y="total",
+        labels={"total": "Amount ($)", "period": "Period"},
+        title=title,
+        color="total",
+        color_continuous_scale="Greens",
+        category_orders={"period": ordered_periods},
+    )
+    fig.update_layout(coloraxis_showscale=False)
+    return fig
+
+
+def income_vs_spending_chart(
+    income_data: list[dict], spending_data: list[dict]
+) -> go.Figure:
+    """Grouped bar chart comparing income vs spending by period."""
+    if not income_data and not spending_data:
+        return _empty_figure("No data")
+
+    all_periods = sorted(
+        set(r["period"] for r in income_data) | set(r["period"] for r in spending_data)
+    )
+    income_map = {r["period"]: r["total"] for r in income_data}
+    spending_map = {r["period"]: r["total"] for r in spending_data}
+
+    fig = go.Figure(data=[
+        go.Bar(
+            name="Income",
+            x=all_periods,
+            y=[income_map.get(p, 0) for p in all_periods],
+            marker_color="#22c55e",
+        ),
+        go.Bar(
+            name="Spending",
+            x=all_periods,
+            y=[spending_map.get(p, 0) for p in all_periods],
+            marker_color="#635bff",
+        ),
+    ])
+    fig.update_layout(
+        barmode="group",
+        title="Income vs Spending",
+        xaxis_title="Period",
+        yaxis_title="Amount ($)",
+    )
+    return fig
+
+
 def _empty_figure(message: str) -> go.Figure:
     fig = go.Figure()
     fig.add_annotation(

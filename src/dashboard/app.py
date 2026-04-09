@@ -22,7 +22,7 @@ from src.db.schema import initialize_db
 from src.plaid_client import PlaidService
 from src.sync.transaction_sync import TransactionSyncer
 
-from src.dashboard.views import overview, categories, merchants, timeline, accounts as accounts_page
+from src.dashboard.views import overview, categories, merchants, timeline, accounts as accounts_page, income as income_page
 
 
 @st.cache_resource
@@ -62,7 +62,7 @@ def main():
 
         page = st.radio(
             "Navigate",
-            options=["Overview", "Categories", "Merchants", "Timeline", "Accounts"],
+            options=["Overview", "Income", "Categories", "Merchants", "Timeline", "Accounts"],
             label_visibility="collapsed",
         )
 
@@ -103,6 +103,8 @@ def main():
     # --- Page routing ---
     if page == "Overview":
         overview.render(repo, account_ids, start, end)
+    elif page == "Income":
+        income_page.render(repo, account_ids, start, end)
     elif page == "Categories":
         categories.render(repo, account_ids, start, end)
     elif page == "Merchants":

@@ -29,18 +29,26 @@ def render(repo: TransactionRepository, account_ids: list[int], start: date, end
     cat_data = repo.get_spending_by_category(start_str, end_str, account_ids)
     total = sum(r["total"] for r in cat_data)
 
-    # Previous period for delta
+    income_total = repo.get_income_total(start_str, end_str, account_ids)
+    net = income_total - total
+    savings_rate = (net / income_total * 100) if income_total else 0.0
+
+    # Previous period for deltas
     delta_days = (end - start).days + 1
     prev_end = start - timedelta(days=1)
     prev_start = prev_end - timedelta(days=delta_days - 1)
     prev_cat = repo.get_spending_by_category(prev_start.isoformat(), prev_end.isoformat(), account_ids)
     prev_total = sum(r["total"] for r in prev_cat)
     delta = total - prev_total
+    prev_income = repo.get_income_total(prev_start.isoformat(), prev_end.isoformat(), account_ids)
+    income_delta = income_total - prev_income
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Spending", f"${total:,.2f}", delta=f"${delta:+,.2f} vs prior period")
-    col2.metric("Transactions", sum(r["count"] for r in cat_data))
-    col3.metric("Categories", len(cat_data))
+    col1, col2, col3, col4, col5 = st.columns(5)
+    col1.metric("Total Income", f"${income_total:,.2f}", delta=f"${income_delta:+,.2f} vs prior period")
+    col2.metric("Total Spending", f"${total:,.2f}", delta=f"${delta:+,.2f} vs prior period")
+    col3.metric("Net", f"${net:,.2f}")
+    col4.metric("Savings Rate", f"{savings_rate:.1f}%")
+    col5.metric("Transactions", sum(r["count"] for r in cat_data))
 
     st.divider()
 
