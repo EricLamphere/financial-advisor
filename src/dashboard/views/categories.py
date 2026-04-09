@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import date
 
+import pandas as pd
 import streamlit as st
 
 from src.dashboard.components.charts import category_bar_chart, category_pie_chart
@@ -10,8 +11,6 @@ from src.db.repository import TransactionRepository
 
 
 def render(repo: TransactionRepository, account_ids: list[int], start: date, end: date) -> None:
-    st.title("Spending by Category")
-
     if not repo.get_accounts():
         st.info("No accounts linked. Go to **Accounts** to connect one.")
         return
@@ -27,20 +26,22 @@ def render(repo: TransactionRepository, account_ids: list[int], start: date, end
 
     col1, col2 = st.columns(2)
     with col1:
-        st.plotly_chart(category_bar_chart(data), width="stretch")
+        st.plotly_chart(category_bar_chart(data), width="stretch", key="cat_bar")
     with col2:
-        st.plotly_chart(category_pie_chart(data), width="stretch")
+        st.plotly_chart(category_pie_chart(data), width="stretch", key="cat_pie")
 
     st.divider()
-    st.subheader("Category Detail")
+    st.markdown('<p class="section-header">Transaction Detail</p>', unsafe_allow_html=True)
 
-    selected_cat = st.selectbox(
-        "Drill into category",
-        options=["All"] + [r["category"] for r in data],
-        key="cat_drill",
-    )
+    col_a, col_b = st.columns([2, 3])
+    with col_a:
+        selected_cat = st.selectbox(
+            "Filter by category",
+            options=["All"] + [r["category"] for r in data],
+            key="cat_drill",
+        )
 
-    tx_filters = {
+    tx_filters: dict = {
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
         "account_ids": account_ids,
@@ -52,7 +53,6 @@ def render(repo: TransactionRepository, account_ids: list[int], start: date, end
     transactions = repo.get_transactions(tx_filters)
 
     if transactions:
-        import pandas as pd
         df = pd.DataFrame([
             {
                 "Date": tx.date,

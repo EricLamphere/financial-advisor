@@ -48,6 +48,13 @@ class TransactionSyncer:
         now = datetime.now(timezone.utc).isoformat()
         self._repo.update_sync_cursor(account.id, next_cursor, now)
 
+        # Snapshot current balance — failure is non-fatal
+        try:
+            for bal in self._plaid.get_account_balances(account.plaid_access_token):
+                self._repo.upsert_balance(replace(bal, account_id=account.id))
+        except PlaidError:
+            pass
+
         return SyncResult(
             account_id=account.id,
             added=len(added_stamped),

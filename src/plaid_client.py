@@ -9,11 +9,12 @@ from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
+from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
 
 from src.config import Config
-from src.db.models import Transaction
+from src.db.models import AccountBalance, Transaction
 
 _PLAID_ENV_MAP = {
     "sandbox": plaid.Environment.Sandbox,
@@ -66,6 +67,16 @@ class PlaidService:
         except Exception as exc:
             raise PlaidError(f"Failed to exchange public token: {exc}") from exc
 
+    def get_account_balances(self, access_token: str) -> list[AccountBalance]:
+        """Fetch current balances for all sub-accounts on an access token."""
+        try:
+            request = AccountsGetRequest(access_token=access_token)
+            response = self._api.accounts_get(request)
+            today = datetime.now(timezone.utc).date().isoformat()
+            return [_plaid_balance_to_model(acct, today) for acct in response.accounts]
+        except Exception as exc:
+            raise PlaidError(f"Failed to fetch balances: {exc}") from exc
+
     def sync_transactions(
         self,
         access_token: str,
@@ -104,6 +115,19 @@ class PlaidService:
             raise PlaidError(f"Failed to sync transactions: {exc}") from exc
 
         return all_added, all_modified, all_removed, next_cursor
+
+
+def _plaid_balance_to_model(acct, date: str) -> AccountBalance:
+    bal = acct.balances
+    return AccountBalance(
+        id=None,
+        account_id=0,  # caller must set before persisting
+        date=date,
+        current=float(bal.current) if bal.current is not None else None,
+        available=float(bal.available) if bal.available is not None else None,
+        limit_amt=float(bal.limit) if hasattr(bal, "limit") and bal.limit is not None else None,
+        iso_currency=bal.iso_currency_code if hasattr(bal, "iso_currency_code") else None,
+    )
 
 
 def _plaid_tx_to_model(tx) -> Transaction:
