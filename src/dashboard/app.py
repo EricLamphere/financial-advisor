@@ -24,6 +24,7 @@ from src.sync.transaction_sync import TransactionSyncer
 from src.dashboard.components.theme import inject_css
 
 from src.dashboard.views import (
+    budget as budget_page,
     overview,
     categories,
     merchants,
@@ -156,12 +157,15 @@ def main():
 
     # ── Tab navigation ───────────────────────────────────────────────────────
     (
-        tab_overview, tab_income, tab_net_worth, tab_cashflow, tab_goals,
+        tab_budget, tab_overview, tab_income, tab_net_worth, tab_cashflow, tab_goals,
         tab_search, tab_yoy, tab_categories, tab_merchants, tab_timeline, tab_accounts
     ) = st.tabs([
-        "Overview", "Income", "Net Worth", "Cash Flow", "Goals",
+        "Budget", "Overview", "Income", "Net Worth", "Cash Flow", "Goals",
         "Search", "Year-over-Year", "Categories", "Merchants", "Timeline", "Accounts",
     ])
+
+    with tab_budget:
+        budget_page.render(repo, account_ids, start, end)
 
     with tab_overview:
         overview.render(repo, account_ids, start, end)

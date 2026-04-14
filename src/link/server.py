@@ -71,9 +71,18 @@ _LINK_HTML = """
             document.getElementById('link-btn').disabled = false;
           }
         },
-        onExit: function(err) {
+        onExit: function(err, metadata) {
           document.getElementById('link-btn').disabled = false;
-          document.getElementById('status').textContent = err ? 'Error: ' + err.display_message : 'Cancelled.';
+          if (err) {
+            const msg = err.display_message || err.error_message || err.error_code || JSON.stringify(err);
+            document.getElementById('status').innerHTML =
+              'Error: ' + msg +
+              (err.error_code ? ' <code style="font-size:11px;color:#999">[' + err.error_code + ']</code>' : '') +
+              '<br><span style="font-size:11px;color:#999">Check the browser console and Flask server log for details.</span>';
+            console.error('Plaid Link exit error:', err, metadata);
+          } else {
+            document.getElementById('status').textContent = 'Cancelled.';
+          }
         },
       });
       handler.open();
